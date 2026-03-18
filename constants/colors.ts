@@ -1,0 +1,16 @@
+export const COLORS = {
+  bg:      '#080810',
+  surface: '#10101E',
+  card:    '#16162A',
+  card2:   '#1E1E34',
+  border:  '#2A2A45',
+  accent:  '#FF3060',
+  violet:  '#7C3AED',
+  green:   '#00D68F',
+  yellow:  '#FFCC00',
+  cyan:    '#00C8FF',
+  orange:  '#FF8C00',
+  text:    '#F0F0FF',
+  muted:   '#6B6B99',
+  white:   '#FFFFFF',
+} as const;
