@@ -1,18 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
+import { auth } from '../config/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 type Mode = 'user' | 'uni' | 'org';
 
 export default function LoginScreen() {
   const [mode, setMode] = useState<Mode>('user');
+  const [isLoginView, setIsLoginView] = useState(true);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async () => {
+    if (!email || !password) return Alert.alert('Error', 'Ingresa correo y contraseña');
+    if (!isLoginView && !name) return Alert.alert('Error', 'Ingresa tu nombre completo');
+    
+    setLoading(true);
+    try {
+      if (isLoginView) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+      }
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        
         <View style={styles.header}>
           <Text style={styles.logoLogo}>📍 K'PARCHE</Text>
           <Text style={styles.logoSubtitle}>A DÓNDE VAMOS HOY</Text>
@@ -20,75 +44,67 @@ export default function LoginScreen() {
 
         <View style={styles.card}>
           <View style={styles.segment}>
-            <TouchableOpacity 
-              style={[styles.tab, mode === 'user' && styles.activeTab]}
-              onPress={() => setMode('user')}
-            >
+            <TouchableOpacity style={[styles.tab, mode === 'user' && styles.activeTab]} onPress={() => setMode('user')}>
               <Text style={[styles.tabText, mode === 'user' && styles.activeTabText]}>👤 Usuario</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, mode === 'uni' && styles.activeTab]}
-              onPress={() => setMode('uni')}
-            >
+            <TouchableOpacity style={[styles.tab, mode === 'uni' && styles.activeTab]} onPress={() => setMode('uni')}>
               <Text style={[styles.tabText, mode === 'uni' && styles.activeTabText]}>🎓 Estudiante</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, mode === 'org' && styles.activeTab]}
-              onPress={() => setMode('org')}
-            >
-              <Text style={[styles.tabText, mode === 'org' && styles.activeTabText]}>🏢 Organizador</Text>
+            <TouchableOpacity style={[styles.tab, mode === 'org' && styles.activeTab]} onPress={() => setMode('org')}>
+              <Text style={[styles.tabText, mode === 'org' && styles.activeTabText]}>🏢 Org</Text>
             </TouchableOpacity>
           </View>
 
           {mode === 'uni' && (
             <View style={styles.banner}>
-              <Text style={styles.bannerText}>Ingresa con tu correo institucional (.edu.co) para acceder a InterU y beneficios.</Text>
+              <Text style={styles.bannerText}>Ingresa tu correo institucional (.edu.co).</Text>
             </View>
+          )}
+
+          {!isLoginView && (
+            <TextInput 
+              style={styles.input}
+              placeholder='Nombre completo'
+              placeholderTextColor={COLORS.muted}
+              value={name}
+              onChangeText={setName}
+            />
           )}
 
           <TextInput 
             style={styles.input}
-            placeholder={mode === 'uni' ? "Correo institucional" : "Correo electrónico"}
+            placeholder='Correo electrónico'
             placeholderTextColor={COLORS.muted}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize='none'
+            keyboardType='email-address'
           />
           <TextInput 
             style={styles.input}
-            placeholder="Contraseña"
+            placeholder='Contraseña'
             placeholderTextColor={COLORS.muted}
-            secureTextEntry={mode !== 'uni'}
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
           />
 
-          <TouchableOpacity onPress={() => router.replace('/(tabs)')} activeOpacity={0.8}>
-            <LinearGradient
-              colors={[COLORS.accent, COLORS.violet]}
-              style={styles.btn}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Text style={styles.btnText}>ENTRAR A K'PARCHE 🚀</Text>
+          <TouchableOpacity onPress={handleAuth} activeOpacity={0.8} disabled={loading}>
+            <LinearGradient colors={[COLORS.accent, COLORS.violet]} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+              <Text style={styles.btnText}>{loading ? 'Cargando...' : isLoginView ? "ENTRAR A K'PARCHE 🚀" : "CREAR CUENTA 🚀"}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <View style={styles.dividerBox}>
             <View style={styles.line} />
-            <Text style={styles.dividerText}>o continúa con</Text>
+            <Text style={styles.dividerText}>o</Text>
             <View style={styles.line} />
           </View>
 
-          <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.btnSecondary}>
-              <Text style={styles.btnSecondaryText}>🔵 Google</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.btnSecondary}>
-              <Text style={styles.btnSecondaryText}>⚫ Apple</Text>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity style={styles.registerLink}>
-            <Text style={styles.registerText}>¿No tienes cuenta? Regístrate gratis</Text>
+          <TouchableOpacity style={styles.registerLink} onPress={() => setIsLoginView(!isLoginView)} disabled={loading}>
+            <Text style={styles.registerText}>{isLoginView ? '¿No tienes cuenta? Regístrate gratis' : '¿Ya tienes cuenta? Inicia sesión'}</Text>
           </TouchableOpacity>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -114,9 +130,6 @@ const styles = StyleSheet.create({
   dividerBox: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
   line: { flex: 1, height: 1, backgroundColor: COLORS.border },
   dividerText: { color: COLORS.muted, marginHorizontal: 12, fontSize: 12 },
-  socialRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  btnSecondary: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14, alignItems: 'center' },
-  btnSecondaryText: { color: COLORS.text, fontWeight: '600', fontSize: 14 },
   registerLink: { alignItems: 'center' },
   registerText: { color: COLORS.accent, fontSize: 14, fontWeight: '600' }
 });

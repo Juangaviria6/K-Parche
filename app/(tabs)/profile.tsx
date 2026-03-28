@@ -3,8 +3,16 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { auth } from '../../config/firebase';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ProfileScreen() {
+  const { user } = useAuth();
+  
+  const handleLogout = () => {
+    auth.signOut();
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
       <LinearGradient colors={[COLORS.accent + '33', 'transparent']} style={styles.header}>
@@ -14,8 +22,8 @@ export default function ProfileScreen() {
           </LinearGradient>
         </View>
 
-        <Text style={styles.name}>Santiago Restrepo</Text>
-        <Text style={styles.email}>santiago@eafit.edu.co</Text>
+        <Text style={styles.name}>{user?.displayName || 'Usuario Parche'}</Text>
+        <Text style={styles.email}>{user?.email}</Text>
 
         <View style={styles.badge}>
           <Text style={styles.badgeText}>🎓 Estudiante Verificado — EAFIT</Text>
@@ -67,7 +75,7 @@ export default function ProfileScreen() {
             { i: 'chatbubble', n: 'Soporte', s: 'Ayuda 24/7' },
             { i: 'log-out', n: 'Cerrar sesión', s: '', d: true }
           ].map((m, idx) => (
-            <TouchableOpacity key={m.n} style={[styles.menuItem, idx === 6 && { borderBottomWidth: 0 }]}>
+            <TouchableOpacity key={m.n} style={[styles.menuItem, idx === 6 && { borderBottomWidth: 0 }]} onPress={m.d ? handleLogout : undefined}>
               <View style={styles.menuIcon}>
                 <Ionicons name={m.i as any} size={20} color={m.d ? COLORS.accent : COLORS.white} />
               </View>

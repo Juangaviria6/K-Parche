@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, FlatList, TouchableOpacity } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,41 @@ import { EventCard } from '../../components/EventCard';
 import { MapPinMarker } from '../../components/MapPinMarker';
 import { EventCategory } from '../../constants/types';
 import { useFilteredEvents } from '../../hooks/useFilteredEvents';
+
+
+const EventMapMarker = ({ event, selected, onSelect }: any) => {
+  const [tracksView, setTracksView] = useState(true);
+  const lastPress = useRef(0);
+
+  useEffect(() => {
+    setTracksView(true);
+    const timeout = setTimeout(() => {
+      setTracksView(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [selected]);
+
+  const handlePress = () => {
+    const now = Date.now();
+    if (now - lastPress.current < 400) {
+      router.push({ pathname: '/event-detail', params: { id: event.id } });
+    } else {
+      onSelect(event.id);
+    }
+    lastPress.current = now;
+  };
+
+  return (
+    <Marker
+      coordinate={{ latitude: event.latitude, longitude: event.longitude }}
+      onPress={handlePress}
+      tracksViewChanges={tracksView}
+      anchor={{ x: 0.5, y: 1 }}
+    >
+      <MapPinMarker event={event} selected={selected} />
+    </Marker>
+  );
+};
 
 export default function ExploreScreen() {
   const [search, setSearch] = useState('');
@@ -83,13 +118,12 @@ export default function ExploreScreen() {
         showsUserLocation
       >
         {filteredEvents.map(event => (
-          <Marker
+          <EventMapMarker
             key={event.id}
-            coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-            onPress={() => setSelectedPin(event.id)}
-          >
-            <MapPinMarker event={event} selected={selectedPin === event.id} />
-          </Marker>
+            event={event}
+            selected={selectedPin === event.id}
+            onSelect={(id: number) => setSelectedPin(id)}
+          />
         ))}
       </MapView>
 
