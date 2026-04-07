@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
 import { UNIVERSITIES, EVENTS, INTERU_EVENTS, fmt } from '../../constants/mockData';
@@ -12,6 +12,7 @@ type Tab = 'unis' | 'events' | 'interu';
 
 export default function UniversityScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('unis');
+  const [searchUni, setSearchUni] = useState<string>('');
 
   return (
     <View style={styles.container}>
@@ -21,7 +22,7 @@ export default function UniversityScreen() {
         
         <View style={styles.tabRow}>
           {(['unis', 'events', 'interu'] as const).map(tab => (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={tab}
               style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
               onPress={() => setActiveTab(tab)}
@@ -32,12 +33,28 @@ export default function UniversityScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {activeTab === 'unis' && UNIVERSITIES.length >= 5 && (
+          <TextInput
+            style={styles.searchInput}
+            value={searchUni}
+            onChangeText={setSearchUni}
+            placeholder="Buscar universidad..."
+            placeholderTextColor={COLORS.muted}
+          />
+        )}
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.content}>
         {activeTab === 'unis' && (
           <View>
-            {UNIVERSITIES.map(u => <UniCard key={u.id} uni={u} />)}
+            {UNIVERSITIES
+              .filter(u => {
+                const q = searchUni.trim().toLowerCase();
+                if (!q) return true;
+                return u.name.toLowerCase().includes(q) || u.short.toLowerCase().includes(q);
+              })
+              .map(u => <UniCard key={u.id} uni={u} />)}
           </View>
         )}
 
@@ -111,6 +128,17 @@ const styles = StyleSheet.create({
   tabText: { color: COLORS.muted, fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: COLORS.white },
   content: { padding: 16, paddingBottom: 100 },
+  searchInput: {
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: COLORS.text,
+    fontSize: 14,
+  },
   addCard: { borderWidth: 2, borderColor: COLORS.border, borderStyle: 'dashed', borderRadius: 16, padding: 20, alignItems: 'center', marginTop: 8 },
   addText: { color: COLORS.text, fontWeight: 'bold', marginBottom: 12 },
   addBtn: { backgroundColor: COLORS.violet, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },

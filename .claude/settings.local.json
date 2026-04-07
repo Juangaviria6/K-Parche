@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/Lenovo/OneDrive/Documentos/Universidad/Tecnicas_DSRTV/K-Parche -type d ! -path */node_modules* ! -path */.expo* ! -path */.git*)"
+    ]
+  }
+}
