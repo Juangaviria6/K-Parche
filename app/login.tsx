@@ -28,7 +28,35 @@ export default function LoginScreen() {
         await updateProfile(cred.user, { displayName: name });
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      let friendlyMessage = 'Ocurrió un error inesperado.';
+
+      // Esto es lo que traduce los códigos técnicos a mensajes claros
+      switch (e.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          friendlyMessage = 'El correo o la contraseña son incorrectos.';
+          break;
+        case 'auth/email-already-in-use':
+          friendlyMessage = 'Este correo ya está en uso por otra cuenta.';
+          break;
+        case 'auth/invalid-email':
+          friendlyMessage = 'El correo electrónico no tiene un formato válido.';
+          break;
+        case 'auth/weak-password':
+          friendlyMessage = 'La contraseña debe tener al menos 6 caracteres.';
+          break;
+        case 'auth/network-request-failed':
+          friendlyMessage = 'Error de red. Revisa tu conexión a internet.';
+          break;
+        case 'auth/too-many-requests':
+          friendlyMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
+          break;
+        default:
+          friendlyMessage = e.message; // Por si ocurre un error no mapeado
+      }
+
+      Alert.alert('¡Ups!', friendlyMessage);
     } finally {
       setLoading(false);
     }
