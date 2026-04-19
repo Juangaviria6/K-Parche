@@ -5,15 +5,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/colors';
 import { EVENTS, fmt } from '../constants/mockData';
+import { useSaved } from '../context/SavedContext';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
   const event = EVENTS.find(e => e.id.toString() === id) || EVENTS[0];
-  const [going, setGoing] = React.useState(false);
-  const [saved, setSaved] = React.useState(false);
+  const { isSaved, toggleSaved, isGoing, toggleGoing } = useSaved();
+  const saved = isSaved(event.id);
+  const going = isGoing(event.id);
+  const baseAttendees = event.attendees ?? 0;
+  const [localAttendees, setLocalAttendees] = React.useState(baseAttendees + (isGoing(event.id) ? 1 : 0));
 
-  const shareEvent = () => {
-    Share.share({ message: `¡Vamos a ${event.name} en ${event.place}! #KPARCHE` });
+  const handleGoingToggle = () => {
+    const next = !going;
+    setLocalAttendees(count => Math.max(0, count + (next ? 1 : -1)));
+    toggleGoing(event.id);
+  };
+
+  const shareEvent = async () => {
+    try {
+      const price = fmt(event.price);
+      await Share.share({
+        message: `🎉 ¡Te invito a ${event.name}!\n📍 ${event.place}\n📅 ${event.date} · ${event.time}\n💰 ${price}\n\n${event.desc}\n\n#KPARCHE`
+      });
+    } catch {
+      // el usuario canceló o la plataforma no soporta Share
+    }
   };
 
   return (
@@ -32,7 +49,7 @@ export default function EventDetailScreen() {
             <Ionicons name="arrow-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.navBtn, { right: 16 }]} onPress={() => setSaved(!saved)}>
+          <TouchableOpacity style={[styles.navBtn, { right: 16 }]} onPress={() => toggleSaved(event.id)}>
             <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={24} color={saved ? COLORS.yellow : COLORS.white} />
           </TouchableOpacity>
 
@@ -49,7 +66,7 @@ export default function EventDetailScreen() {
             { i: 'location-outline', l: 'Lugar', v: event.place },
             { i: 'time-outline', l: 'Hora', v: event.time },
             { i: 'calendar-outline', l: 'Fecha', v: event.date },
-            { i: 'people-outline', l: 'Asistentes', v: event.attendees.toString() },
+            { i: 'people-outline', l: 'Asistentes', v: localAttendees.toString() },
             { i: 'star-outline', l: 'Rating', v: event.rating.toString() },
             { i: 'cash-outline', l: 'Precio', v: fmt(event.price) }
           ].map(item => (
@@ -67,7 +84,7 @@ export default function EventDetailScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.secTitle}>Quién va (120)</Text>
+          <Text style={styles.secTitle}>Quién va ({localAttendees})</Text>
           <View style={styles.avatars}>
             {['🧑', '👨', '👩', '👧', '👵'].map((em, i) => (
               <View key={i} style={[styles.avatar, { marginLeft: i === 0 ? 0 : -10, zIndex: 5 - i }]}>
@@ -75,7 +92,7 @@ export default function EventDetailScreen() {
               </View>
             ))}
             <View style={[styles.avatar, { marginLeft: -10, backgroundColor: COLORS.accent }]}>
-              <Text style={{ fontSize: 10, color: COLORS.white, fontWeight: 'bold' }}>+115</Text>
+              <Text style={{ fontSize: 10, color: COLORS.white, fontWeight: 'bold' }}>+{Math.max(0, localAttendees - 5)}</Text>
             </View>
           </View>
         </View>
@@ -89,9 +106,9 @@ export default function EventDetailScreen() {
       </ScrollView>
 
       <View style={styles.cta}>
-        <TouchableOpacity 
-          style={{ flex: 2 }} 
-          onPress={() => setGoing(!going)}
+        <TouchableOpacity
+          style={{ flex: 2 }}
+          onPress={handleGoingToggle}
           activeOpacity={0.8}
         >
           {going ? (

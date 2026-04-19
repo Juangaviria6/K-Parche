@@ -6,11 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
   uni: University;
+  onPress?: () => void;
 }
 
-export const UniCard = ({ uni }: Props) => {
+export const UniCard = ({ uni, onPress }: Props) => {
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.8} onPress={onPress}>
       <View style={[styles.iconBox, { backgroundColor: uni.color + '22', borderColor: uni.color + '66' }]}>
         <Text style={styles.emoji}>🏛️</Text>
       </View>

@@ -4,15 +4,19 @@ import { COLORS } from '../../constants/colors';
 import { EVENTS } from '../../constants/mockData';
 import { EventCard } from '../../components/EventCard';
 import { router } from 'expo-router';
+import { useSaved } from '../../context/SavedContext';
 
 export default function SavedScreen() {
-  const savedEvents = EVENTS.slice(0, 4);
+  const { savedIds } = useSaved();
+  const savedEvents = EVENTS.filter(e => savedIds.includes(e.id));
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>🔖 Guardados</Text>
-        <Text style={styles.subtitle}>{savedEvents.length} eventos para ti</Text>
+        <Text style={styles.subtitle}>
+          {savedEvents.length > 0 ? `${savedEvents.length} evento${savedEvents.length === 1 ? '' : 's'} guardado${savedEvents.length === 1 ? '' : 's'}` : 'Aún no tienes guardados'}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -20,11 +24,13 @@ export default function SavedScreen() {
           <EventCard key={e.id} event={e} onPress={() => router.push({ pathname: '/event-detail', params: { id: e.id }})} />
         ))}
 
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyEmoji}>🎪</Text>
-          <Text style={styles.emptyTitle}>Explora y guarda más eventos</Text>
-          <Text style={styles.emptyDesc}>Encuentra los mejores parches en Medellín y agrégalos a tu lista.</Text>
-        </View>
+        {savedEvents.length === 0 && (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyEmoji}>🎪</Text>
+            <Text style={styles.emptyTitle}>Explora y guarda más eventos</Text>
+            <Text style={styles.emptyDesc}>Encuentra los mejores parches en Medellín y agrégalos a tu lista.</Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );

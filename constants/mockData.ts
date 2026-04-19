@@ -29,7 +29,8 @@ export const EVENTS: Event[] = [
     desc: "48 horas para crear soluciones tecnológicas con impacto social en Antioquia. Premios hasta $5 millones. Abierto a todas las universidades del Área Metro.",
     img: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&q=80",
     rating: 4.9, attendees: 200,
-    latitude: 6.2672, longitude: -75.5874
+    latitude: 6.2672, longitude: -75.5874,
+    uniShort: 'UNAL'
   },
   {
     id: 4, name: "Rock en el Teatro", place: "Teatro Pablo Tobón Uribe · Centro",
@@ -47,7 +48,8 @@ export const EVENTS: Event[] = [
     desc: "El clásico universitario de Medellín. Deportes, música en vivo, stands de comida típica antioqueña y mucho parche.",
     img: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80",
     rating: 4.6, attendees: 600,
-    latitude: 6.2006, longitude: -75.5781
+    latitude: 6.2006, longitude: -75.5781,
+    uniShort: 'EAFIT'
   },
   {
     id: 6, name: "Arte Urbano · Comuna 13", place: "Casa Kolacho · Comuna 13",
