@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '../constants/colors';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { SavedProvider } from '../context/SavedContext';
 import { ActivityIndicator, View } from 'react-native';
 
 function InitialLayout() {
@@ -34,6 +35,7 @@ function InitialLayout() {
       <Stack.Screen name='login' />
       <Stack.Screen name='(tabs)' />
       <Stack.Screen name='event-detail' options={{ presentation: 'modal' }} />
+      <Stack.Screen name='university-detail' options={{ presentation: 'modal' }} />
     </Stack>
   );
 }
@@ -43,7 +45,9 @@ export default function RootLayout() {
     <SafeAreaProvider style={{ backgroundColor: COLORS.bg }}>
       <StatusBar style='light' />
       <AuthProvider>
-        <InitialLayout />
+        <SavedProvider>
+          <InitialLayout />
+        </SavedProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

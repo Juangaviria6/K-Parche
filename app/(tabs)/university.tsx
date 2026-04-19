@@ -54,7 +54,13 @@ export default function UniversityScreen() {
                 if (!q) return true;
                 return u.name.toLowerCase().includes(q) || u.short.toLowerCase().includes(q);
               })
-              .map(u => <UniCard key={u.id} uni={u} />)}
+              .map(u => (
+                <UniCard
+                  key={u.id}
+                  uni={u}
+                  onPress={() => router.push({ pathname: '/university-detail', params: { id: u.id } })}
+                />
+              ))}
           </View>
         )}
 

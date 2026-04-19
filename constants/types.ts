@@ -20,6 +20,7 @@ export interface Event {
   attendees: number;
   latitude: number;
   longitude: number;
+  uniShort?: string;
 }
 
 export interface University {
