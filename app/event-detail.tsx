@@ -1,98 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Share, ActivityIndicator, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { COLORS } from '../constants/colors';
-import { fmt } from '../constants/mockData';
+import { EVENTS, fmt } from '../constants/mockData';
 import { useSaved } from '../context/SavedContext';
 
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams();
-  const [event, setEvent] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  
+  const event = EVENTS.find(e => e.id.toString() === id) || EVENTS[0];
   const { isSaved, toggleSaved, isGoing, toggleGoing } = useSaved();
-  
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        const docRef = doc(db, 'events', id as string);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          setEvent({ id: docSnap.id, ...docSnap.data() });
-        } else {
-          Alert.alert('Error', 'El evento no existe o fue eliminado.', [
-            { text: 'Volver', onPress: () => router.back() }
-          ]);
-        }
-      } catch (e: any) {
-        Alert.alert('Error', 'Hubo un problema cargando el evento.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (id) fetchEvent();
-  }, [id]);
-
-  const saved = event ? isSaved(event.id) : false;
-  const going = event ? isGoing(event.id) : false;
-  const baseAttendees = event?.attendees ?? 0;
-  const [localAttendees, setLocalAttendees] = React.useState(0);
-
-  useEffect(() => {
-    if (event) {
-      setLocalAttendees(baseAttendees + (isGoing(event.id) ? 1 : 0));
-    }
-  }, [event]);
+  const saved = isSaved(event.id);
+  const going = isGoing(event.id);
+  const baseAttendees = event.attendees ?? 0;
+  const [localAttendees, setLocalAttendees] = React.useState(baseAttendees + (isGoing(event.id) ? 1 : 0));
 
   const handleGoingToggle = () => {
-    if (!event) return;
     const next = !going;
     setLocalAttendees(count => Math.max(0, count + (next ? 1 : -1)));
     toggleGoing(event.id);
   };
 
   const shareEvent = async () => {
-    if (!event) return;
     try {
-      const price = fmt(event.price);
+      const price = fmt(event.price ?? 0);
       await Share.share({
-        message: `🎉 ¡Te invito a ${event.name}!\n📍 ${event.place}\n📅 ${event.date} · ${event.time}\n💰 ${price}\n\n${event.desc}\n\n#KPARCHE`
+        message: `🎉 ¡Te invito a ${event.name ?? 'este evento'}!\n📍 ${event.place ?? 'lugar por confirmar'}\n📅 ${event.date ?? ''} · ${event.time ?? ''}\n💰 ${price}\n\n${event.desc ?? ''}\n\n#KPARCHE`
       });
     } catch {
       // el usuario canceló o la plataforma no soporta Share
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={{ color: COLORS.text, marginTop: 12, fontWeight: 'bold' }}>Cargando evento de K'PARCHE...</Text>
-      </View>
-    );
-  }
-
-  if (!event) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: COLORS.muted }}>Evento no encontrado.</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroBox}>
-          <Image source={{ uri: event.coverUrl || event.img || 'https://via.placeholder.com/400' }} style={styles.heroImg} />
-          <LinearGradient 
-            colors={['transparent', COLORS.bg]} 
+          <Image source={{ uri: event.img }} style={styles.heroImg} />
+          <LinearGradient
+            colors={['transparent', COLORS.bg]}
             style={StyleSheet.absoluteFillObject}
             start={{ x: 0, y: 0.3 }}
             end={{ x: 0, y: 1 }}
@@ -107,24 +54,24 @@ export default function EventDetailScreen() {
           </TouchableOpacity>
 
           <View style={styles.heroInfo}>
-            <View style={[styles.badge, { backgroundColor: event.color || COLORS.accent }]}>
-              <Text style={styles.badgeText}>{(event.cat || event.type || 'Evento').toUpperCase()}</Text>
+            <View style={[styles.badge, { backgroundColor: event.color }]}>
+              <Text style={styles.badgeText}>{event.type}</Text>
             </View>
             <Text style={styles.title}>{event.name}</Text>
           </View>
         </View>
 
         <View style={styles.grid}>
-          {[ 
+          {[
             { i: 'location-outline', l: 'Lugar', v: event.place },
             { i: 'time-outline', l: 'Hora', v: event.time },
             { i: 'calendar-outline', l: 'Fecha', v: event.date },
             { i: 'people-outline', l: 'Asistentes', v: localAttendees.toString() },
-            { i: 'star-outline', l: 'Rating', v: (event.rating || 4.5).toString() },
-            { i: 'cash-outline', l: 'Precio', v: fmt(event.price || 0) }
+            { i: 'star-outline', l: 'Rating', v: event.rating.toString() },
+            { i: 'cash-outline', l: 'Precio', v: fmt(event.price) }
           ].map(item => (
             <View key={item.l} style={styles.cardInfo}>
-              <Ionicons name={item.i as any} size={28} color={event.color || COLORS.accent} style={{ marginBottom: 8 }} />
+              <Ionicons name={item.i as any} size={28} color={event.color} style={{ marginBottom: 8 }} />
               <Text style={styles.cardL}>{item.l}</Text>
               <Text style={styles.cardV}>{item.v}</Text>
             </View>
