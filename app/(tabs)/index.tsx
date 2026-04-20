@@ -49,7 +49,7 @@ const EventMapMarker = ({ event, selected, onSelect }: any) => {
 export default function ExploreScreen() {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>('todos');
-  const [selectedPin, setSelectedPin] = useState<number | null>(null);
+  const [selectedPin, setSelectedPin] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [maxPrice, setMaxPrice] = useState(100000);
 
@@ -122,7 +122,7 @@ export default function ExploreScreen() {
             key={event.id}
             event={event}
             selected={selectedPin === event.id}
-            onSelect={(id: number) => setSelectedPin(id)}
+            onSelect={(id: string) => setSelectedPin(id)}
           />
         ))}
       </MapView>

@@ -119,7 +119,7 @@ export default function LoginScreen() {
 
           <TouchableOpacity onPress={handleAuth} activeOpacity={0.8} disabled={loading}>
             <LinearGradient colors={[COLORS.accent, COLORS.violet]} style={styles.btn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={styles.btnText}>{loading ? 'Cargando...' : isLoginView ? "ENTRAR A K'PARCHE 🚀" : "CREAR CUENTA 🚀"}</Text>
+              <Text style={styles.btnText}>{loading ? 'Cargando...' : isLoginView ? "ENTRAR A K'PARCHE" : "CREAR CUENTA"}</Text>
             </LinearGradient>
           </TouchableOpacity>
 
