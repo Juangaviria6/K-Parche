@@ -1,7 +1,8 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { COLORS } from '../../constants/colors';
+import { useAuth } from '../../context/AuthContext';
 
 function TabBarIcon({ name, emoji, focused }: { name: any, emoji: string, focused: boolean }) {
   return (
@@ -9,6 +10,30 @@ function TabBarIcon({ name, emoji, focused }: { name: any, emoji: string, focuse
       <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5, transform: [{ scale: focused ? 1.15 : 1 }] }}>
         {emoji}
       </Text>
+      {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.accent, marginTop: 4 }} />}
+    </View>
+  );
+}
+
+function ProfileTabIcon({ focused }: { focused: boolean }) {
+  const { user } = useAuth();
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 4 }}>
+      {user?.photoURL ? (
+        <Image
+          source={{ uri: user.photoURL }}
+          style={{
+            width: 28, height: 28, borderRadius: 14,
+            opacity: focused ? 1 : 0.5,
+            borderWidth: focused ? 2 : 0,
+            borderColor: COLORS.accent,
+          }}
+        />
+      ) : (
+        <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5, transform: [{ scale: focused ? 1.15 : 1 }] }}>
+          👤
+        </Text>
+      )}
       {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.accent, marginTop: 4 }} />}
     </View>
   );
@@ -66,7 +91,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ focused }) => <TabBarIcon emoji="👤" name="person" focused={focused} />,
+          tabBarIcon: ({ focused }) => <ProfileTabIcon focused={focused} />,
         }}
       />
     </Tabs>

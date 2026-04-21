@@ -5,9 +5,10 @@ import { auth } from '../config/firebase';
 interface AuthContextType {
   user: User | null;
   initializing: boolean;
+  refreshUser: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, initializing: true });
+const AuthContext = createContext<AuthContextType>({ user: null, initializing: true, refreshUser: () => {} });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,8 +23,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, [initializing]);
 
+  const refreshUser = () => {
+    if (auth.currentUser) {
+      setUser(Object.assign(Object.create(Object.getPrototypeOf(auth.currentUser)), auth.currentUser));
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, initializing }}>
+    <AuthContext.Provider value={{ user, initializing, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
