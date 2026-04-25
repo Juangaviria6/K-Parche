@@ -1,28 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, FlatList, TouchableOpacity } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import Mapbox, { MapView, Camera, MarkerView, UserLocation } from '@rnmapbox/maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
-import { mapStyle } from '../../constants/mapStyle'; // Let's simplify without external complex mapStyle for now
 import { CategoryPill } from '../../components/CategoryPill';
 import { EventCard } from '../../components/EventCard';
 import { MapPinMarker } from '../../components/MapPinMarker';
 import { EventCategory } from '../../constants/types';
 import { useFilteredEvents } from '../../hooks/useFilteredEvents';
 
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
+
+const MEDELLIN_CENTER: [number, number] = [-75.5812, 6.2442];
 
 const EventMapMarker = ({ event, selected, onSelect }: any) => {
-  const [tracksView, setTracksView] = useState(true);
   const lastPress = useRef(0);
-
-  useEffect(() => {
-    setTracksView(true);
-    const timeout = setTimeout(() => {
-      setTracksView(false);
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [selected]);
 
   const handlePress = () => {
     const now = Date.now();
@@ -35,14 +28,15 @@ const EventMapMarker = ({ event, selected, onSelect }: any) => {
   };
 
   return (
-    <Marker
-      coordinate={{ latitude: event.latitude, longitude: event.longitude }}
-      onPress={handlePress}
-      tracksViewChanges={tracksView}
-      anchor={{ x: 0.5, y: 1 }}
+    <MarkerView
+      coordinate={[event.longitude, event.latitude]}
+      id={`marker-${event.id}`}
+      allowOverlap
     >
-      <MapPinMarker event={event} selected={selected} />
-    </Marker>
+      <TouchableOpacity onPress={handlePress} activeOpacity={1}>
+        <MapPinMarker event={event} selected={selected} />
+      </TouchableOpacity>
+    </MarkerView>
   );
 };
 
@@ -66,7 +60,7 @@ export default function ExploreScreen() {
             value={search}
             onChangeText={setSearch}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.filterBtn, showFilter && { backgroundColor: COLORS.accent }]}
             onPress={() => setShowFilter(!showFilter)}
           >
@@ -76,11 +70,11 @@ export default function ExploreScreen() {
 
         {showFilter && (
           <View style={styles.filterPanel}>
-            <Text style={styles.filterLabel}>💰 Precio máximo: $`{maxPrice.toLocaleString('es-CO')}</Text>
+            <Text style={styles.filterLabel}>💰 Precio máximo: ${maxPrice.toLocaleString('es-CO')}</Text>
             <View style={styles.pricePills}>
-              {[ {l: 'Todos', v: 1000000}, {l: 'GRATIS', v: 0}, {l: '$25k', v: 25000}, {l: '$50k', v: 50000}].map(p => (
-                <TouchableOpacity 
-                  key={p.l} 
+              {[{ l: 'Todos', v: 1000000 }, { l: 'GRATIS', v: 0 }, { l: '$25k', v: 25000 }, { l: '$50k', v: 50000 }].map(p => (
+                <TouchableOpacity
+                  key={p.l}
                   style={[styles.pricePill, maxPrice === p.v && { backgroundColor: COLORS.accent }]}
                   onPress={() => setMaxPrice(p.v)}
                 >
@@ -94,11 +88,11 @@ export default function ExploreScreen() {
         <View style={styles.catScrollBox}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.catScroll}>
             {(['todos', 'electronica', 'gastronomia', 'concierto', 'arte', 'academico', 'integracion', 'musica'] as EventCategory[]).map(cat => (
-              <CategoryPill 
-                key={cat} 
-                label={cat} 
-                active={selectedCategory === cat} 
-                onPress={() => setSelectedCategory(cat)} 
+              <CategoryPill
+                key={cat}
+                label={cat}
+                active={selectedCategory === cat}
+                onPress={() => setSelectedCategory(cat)}
               />
             ))}
           </ScrollView>
@@ -107,16 +101,17 @@ export default function ExploreScreen() {
 
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: 6.2442,
-          longitude: -75.5812,
-          latitudeDelta: 0.08,
-          longitudeDelta: 0.08,
-        }}
-        mapType="mutedStandard"
-        userInterfaceStyle="dark"
-        showsUserLocation
+        styleURL={Mapbox.StyleURL.Dark}
+        logoEnabled={false}
+        attributionEnabled={false}
+        scaleBarEnabled={false}
       >
+        <Camera
+          zoomLevel={11}
+          centerCoordinate={MEDELLIN_CENTER}
+          animationMode="none"
+        />
+        <UserLocation visible />
         {filteredEvents.map(event => (
           <EventMapMarker
             key={event.id}
@@ -194,5 +189,5 @@ const styles = StyleSheet.create({
   miniTimeText: { color: COLORS.white, fontSize: 10, fontWeight: 'bold' },
   miniName: { color: COLORS.text, fontSize: 12, fontWeight: '700', marginBottom: 2 },
   miniPlace: { color: COLORS.muted, fontSize: 10, marginBottom: 6 },
-  miniPrice: { fontSize: 12, fontWeight: '800' }
+  miniPrice: { fontSize: 12, fontWeight: '800' },
 });
