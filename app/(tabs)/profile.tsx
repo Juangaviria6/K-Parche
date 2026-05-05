@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import CryptoJS from 'crypto-js';
@@ -9,7 +10,7 @@ import { auth } from '../../config/firebase';
 import { updateProfile } from 'firebase/auth';
 import { useAuth } from '../../context/AuthContext';
 import { useSaved } from '../../context/SavedContext';
-import { EVENTS } from '../../constants/mockData';
+import { useEventsByIds } from '../../hooks/useEventsByIds';
 import { EventCard } from '../../components/EventCard';
 import { router } from 'expo-router';
 
@@ -18,9 +19,21 @@ const API_KEY = '778276968231184';
 const API_SECRET = 'famhU1aIdmGlgP6PgmweQGvQXJU';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user, refreshUser } = useAuth();
-  const { goingIds } = useSaved();
-  const goingEvents = EVENTS.filter(e => goingIds.includes(e.id));
+  const { goingIds, savedIds, points } = useSaved();
+  const { events: goingEvents } = useEventsByIds(goingIds);
+
+  const MAX_POINTS = 500;
+  const levels = [
+    { min: 0,   max: 99,  label: 'Nuevo Parche',       icon: '🌱' },
+    { min: 100, max: 299, label: 'Parche Regular',      icon: '⭐' },
+    { min: 300, max: 499, label: 'Parche VIP',          icon: '🔥' },
+    { min: 500, max: Infinity, label: 'Embajador K\'Parche', icon: '👑' },
+  ];
+  const level = levels.find(l => points >= l.min && points <= l.max) ?? levels[0];
+  const nextLevelPoints = level.max === Infinity ? MAX_POINTS : level.max + 1;
+  const progressPct = Math.min(1, points / MAX_POINTS);
   const [editing, setEditing] = useState(false);
   const [newName, setNewName] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -98,7 +111,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
-      <LinearGradient colors={[COLORS.accent + '33', 'transparent']} style={styles.header}>
+      <LinearGradient colors={[COLORS.accent + '33', 'transparent']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           style={styles.avatarBox}
           onPress={editing ? pickImage : undefined}
@@ -162,9 +175,9 @@ export default function ProfileScreen() {
       <View style={styles.statsGrid}>
         {[
           { i: '🎪', v: String(goingEvents.length), l: 'Asistidos' },
-          { i: '⭐', v: '340', l: 'Puntos U' },
-          { i: '🔖', v: '8', l: 'Guardados' },
-          { i: '🏆', v: '5', l: 'Logros' }
+          { i: '⭐', v: String(points), l: 'Puntos U' },
+          { i: '🔖', v: String(savedIds.length), l: 'Guardados' },
+          { i: level.icon, v: level.label.split(' ')[0], l: 'Nivel' }
         ].map(s => (
           <View key={s.l} style={styles.statCard}>
             <Text style={{ fontSize: 24, marginBottom: 8 }}>{s.i}</Text>
@@ -178,7 +191,7 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>🎟️ Mis Planes · {goingEvents.length}</Text>
         {goingEvents.length > 0 ? (
           goingEvents.map(e => (
-            <EventCard key={e.id} event={e} horizontal onPress={() => router.push({ pathname: '/event-detail', params: { id: e.id } })} />
+            <EventCard key={e.id} event={e} horizontal onPress={() => router.push({ pathname: '/event-detail', params: { id: String(e.id) } })} />
           ))
         ) : (
           <View style={styles.emptyPlans}>
@@ -194,42 +207,48 @@ export default function ProfileScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <Text style={styles.pLabel}>Puntos U acumulados</Text>
-          <Text style={styles.pNum}>340 ⭐</Text>
-          <Text style={styles.pSub}>160 puntos más para tu próximo beneficio exclusivo</Text>
-
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+            <Text style={styles.pLabel}>Puntos U acumulados</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '800' }}>{level.icon} {level.label}</Text>
+          </View>
+          <Text style={styles.pNum}>{points} ⭐</Text>
+          <Text style={styles.pSub}>
+            {level.max === Infinity
+              ? '¡Nivel máximo alcanzado! Eres Embajador K\'Parche 👑'
+              : `${nextLevelPoints - points} puntos para el siguiente nivel`}
+          </Text>
           <View style={styles.barBg}>
-            <View style={styles.barFill} />
+            <View style={[styles.barFill, { width: `${progressPct * 100}%` }]} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
             <Text style={styles.pSub}>0</Text>
             <Text style={styles.pSub}>500</Text>
           </View>
+          <Text style={[styles.pSub, { marginTop: 8 }]}>+50 pts por cada evento al que confirmes asistencia</Text>
         </LinearGradient>
 
         <View style={styles.menu}>
           {[
-            { i: 'ticket', n: 'Mis boletas', s: '2 eventos próximos' },
-            { i: 'gift', n: 'Beneficios', s: '3 descuentos disponibles' },
-            { i: 'bar-chart', n: 'Mi actividad', s: 'Ver historial completo' },
-            { i: 'notifications', n: 'Notificaciones', s: 'Personalizadas por zona' },
-            { i: 'lock-closed', n: 'Privacidad', s: '' },
-            { i: 'chatbubble', n: 'Soporte', s: 'Ayuda 24/7' },
-            { i: 'log-out', n: 'Cerrar sesión', s: '', d: true }
+            { i: 'ticket',        n: 'Mis boletas',    s: `${goingIds.length} evento${goingIds.length === 1 ? '' : 's'} confirmado${goingIds.length === 1 ? '' : 's'}`, route: '/my-tickets' },
+            { i: 'gift',          n: 'Beneficios',     s: `${points} puntos disponibles`,  route: '/benefits' },
+            { i: 'bar-chart',     n: 'Mi actividad',   s: 'Ver historial completo',         route: '/activity' },
+            { i: 'notifications', n: 'Notificaciones', s: 'Personalizadas por zona',        route: '/notifications' },
+            { i: 'chatbubble',    n: 'Soporte',        s: 'Ayuda 24/7',                     route: '/support' },
+            { i: 'log-out',       n: 'Cerrar sesión',  s: '',                               route: null, danger: true },
           ].map((m, idx) => (
             <TouchableOpacity
               key={m.n}
-              style={[styles.menuItem, idx === 6 && { borderBottomWidth: 0 }]}
-              onPress={m.d ? handleLogout : undefined}
+              style={[styles.menuItem, idx === 5 && { borderBottomWidth: 0 }]}
+              onPress={() => m.danger ? handleLogout() : router.push(m.route as any)}
             >
               <View style={styles.menuIcon}>
-                <Ionicons name={m.i as any} size={20} color={m.d ? COLORS.accent : COLORS.white} />
+                <Ionicons name={m.i as any} size={20} color={m.danger ? COLORS.accent : COLORS.white} />
               </View>
               <View style={styles.menuInfo}>
-                <Text style={[styles.menuName, m.d && { color: COLORS.accent }]}>{m.n}</Text>
+                <Text style={[styles.menuName, m.danger && { color: COLORS.accent }]}>{m.n}</Text>
                 {!!m.s && <Text style={styles.menuSub}>{m.s}</Text>}
               </View>
-              <Ionicons name="chevron-forward" size={22} color={COLORS.muted} />
+              {!m.danger && <Ionicons name="chevron-forward" size={22} color={COLORS.muted} />}
             </TouchableOpacity>
           ))}
         </View>
@@ -240,7 +259,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { paddingTop: 60, alignItems: 'center', paddingBottom: 24, paddingHorizontal: 16 },
+  header: { alignItems: 'center', paddingBottom: 24, paddingHorizontal: 16 },
   avatarBox: { shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 20, marginBottom: 16 },
   avatar: { width: 90, height: 90, borderRadius: 45, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImg: { width: 90, height: 90, borderRadius: 45 },

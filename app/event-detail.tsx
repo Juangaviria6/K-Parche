@@ -1,35 +1,78 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Share } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { COLORS } from '../constants/colors';
-import { EVENTS, fmt } from '../constants/mockData';
+import { fmt } from '../constants/mockData';
 import { useSaved } from '../context/SavedContext';
 
 export default function EventDetailScreen() {
-  const { id } = useLocalSearchParams();
-  const event = EVENTS.find(e => e.id.toString() === id) || EVENTS[0];
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const eventId = Array.isArray(id) ? id[0] : id;
+
+  const [event, setEvent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [localAttendees, setLocalAttendees] = useState(0);
+
   const { isSaved, toggleSaved, isGoing, toggleGoing } = useSaved();
+
+  useEffect(() => {
+    if (!eventId) return;
+    const fetchEvent = async () => {
+      try {
+        const ref = doc(db, 'events', eventId);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          setEvent({ id: snap.id, ...data });
+          setLocalAttendees((data.attendees ?? 0) + (isGoing(snap.id) ? 1 : 0));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvent();
+  }, [eventId]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
+      </View>
+    );
+  }
+
+  if (!event) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: COLORS.muted, fontSize: 16 }}>Evento no encontrado</Text>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16 }}>
+          <Text style={{ color: COLORS.accent, fontWeight: 'bold' }}>← Volver</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const saved = isSaved(event.id);
   const going = isGoing(event.id);
-  const baseAttendees = event.attendees ?? 0;
-  const [localAttendees, setLocalAttendees] = React.useState(baseAttendees + (isGoing(event.id) ? 1 : 0));
 
   const handleGoingToggle = () => {
     const next = !going;
-    setLocalAttendees(count => Math.max(0, count + (next ? 1 : -1)));
+    setLocalAttendees((count: number) => Math.max(0, count + (next ? 1 : -1)));
     toggleGoing(event.id);
   };
 
   const shareEvent = async () => {
     try {
-      const price = fmt(event.price ?? 0);
       await Share.share({
-        message: `🎉 ¡Te invito a ${event.name ?? 'este evento'}!\n📍 ${event.place ?? 'lugar por confirmar'}\n📅 ${event.date ?? ''} · ${event.time ?? ''}\n💰 ${price}\n\n${event.desc ?? ''}\n\n#KPARCHE`
+        message: `🎉 ¡Te invito a ${event.name ?? 'este evento'}!\n📍 ${event.place ?? ''}\n📅 ${event.date ?? ''} · ${event.time ?? ''}\n💰 ${fmt(event.price ?? 0)}\n\n${event.desc ?? ''}\n\n#KPARCHE`
       });
     } catch {
-      // el usuario canceló o la plataforma no soporta Share
+      // usuario canceló
     }
   };
 
@@ -37,7 +80,11 @@ export default function EventDetailScreen() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.heroBox}>
-          <Image source={{ uri: event.img }} style={styles.heroImg} />
+          {event.img ? (
+            <Image source={{ uri: event.img }} style={styles.heroImg} />
+          ) : (
+            <View style={[styles.heroImg, { backgroundColor: event.color ?? COLORS.card }]} />
+          )}
           <LinearGradient
             colors={['transparent', COLORS.bg]}
             style={StyleSheet.absoluteFillObject}
@@ -50,28 +97,28 @@ export default function EventDetailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.navBtn, { right: 16 }]} onPress={() => toggleSaved(event.id)}>
-            <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={24} color={saved ? COLORS.yellow : COLORS.white} />
+            <Ionicons name={saved ? 'bookmark' : 'bookmark-outline'} size={24} color={saved ? COLORS.yellow : COLORS.white} />
           </TouchableOpacity>
 
           <View style={styles.heroInfo}>
-            <View style={[styles.badge, { backgroundColor: event.color }]}>
-              <Text style={styles.badgeText}>{event.type}</Text>
+            <View style={[styles.badge, { backgroundColor: event.color ?? COLORS.accent }]}>
+              <Text style={styles.badgeText}>{event.type ?? ''}</Text>
             </View>
-            <Text style={styles.title}>{event.name}</Text>
+            <Text style={styles.title}>{event.name ?? ''}</Text>
           </View>
         </View>
 
         <View style={styles.grid}>
           {[
-            { i: 'location-outline', l: 'Lugar', v: event.place },
-            { i: 'time-outline', l: 'Hora', v: event.time },
-            { i: 'calendar-outline', l: 'Fecha', v: event.date },
+            { i: 'location-outline', l: 'Lugar', v: event.place ?? '-' },
+            { i: 'time-outline', l: 'Hora', v: event.time ?? '-' },
+            { i: 'calendar-outline', l: 'Fecha', v: event.date ?? '-' },
             { i: 'people-outline', l: 'Asistentes', v: localAttendees.toString() },
-            { i: 'star-outline', l: 'Rating', v: event.rating.toString() },
-            { i: 'cash-outline', l: 'Precio', v: fmt(event.price) }
+            { i: 'star-outline', l: 'Rating', v: (event.rating ?? 0).toString() },
+            { i: 'cash-outline', l: 'Precio', v: fmt(event.price ?? 0) },
           ].map(item => (
             <View key={item.l} style={styles.cardInfo}>
-              <Ionicons name={item.i as any} size={28} color={event.color} style={{ marginBottom: 8 }} />
+              <Ionicons name={item.i as any} size={28} color={event.color ?? COLORS.accent} style={{ marginBottom: 8 }} />
               <Text style={styles.cardL}>{item.l}</Text>
               <Text style={styles.cardV}>{item.v}</Text>
             </View>
@@ -80,7 +127,7 @@ export default function EventDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.secTitle}>Sobre el evento</Text>
-          <Text style={styles.desc}>{event.desc}</Text>
+          <Text style={styles.desc}>{event.desc ?? ''}</Text>
         </View>
 
         <View style={styles.section}>
@@ -97,20 +144,32 @@ export default function EventDetailScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.mapPreview}>
-            <Text style={{ fontSize: 40 }}>🗺️</Text>
+        {event.latitude && event.longitude && (
+          <View style={styles.section}>
+            <Text style={styles.secTitle}>📍 Ubicación</Text>
+            <View style={styles.mapPreview}>
+              <MapView
+                style={StyleSheet.absoluteFillObject}
+                initialRegion={{
+                  latitude: event.latitude,
+                  longitude: event.longitude,
+                  latitudeDelta: 0.008,
+                  longitudeDelta: 0.008,
+                }}
+                scrollEnabled={false}
+                zoomEnabled={false}
+                pitchEnabled={false}
+                rotateEnabled={false}
+              >
+                <Marker coordinate={{ latitude: event.latitude, longitude: event.longitude }} />
+              </MapView>
+            </View>
           </View>
-        </View>
-
+        )}
       </ScrollView>
 
       <View style={styles.cta}>
-        <TouchableOpacity
-          style={{ flex: 2 }}
-          onPress={handleGoingToggle}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={{ flex: 2 }} onPress={handleGoingToggle} activeOpacity={0.8}>
           {going ? (
             <View style={[styles.mainBtnWrapper, { backgroundColor: COLORS.green }]}>
               <Text style={styles.mainBtnTxt}>✅ ¡Confirmado! Voy</Text>
@@ -132,6 +191,7 @@ export default function EventDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  center: { flex: 1, backgroundColor: COLORS.bg, alignItems: 'center', justifyContent: 'center' },
   content: { paddingBottom: 120 },
   heroBox: { height: 260, position: 'relative' },
   heroImg: { width: '100%', height: '100%', resizeMode: 'cover' },
@@ -149,10 +209,10 @@ const styles = StyleSheet.create({
   desc: { fontSize: 14, color: COLORS.muted, lineHeight: 22 },
   avatars: { flexDirection: 'row' },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card2, borderWidth: 2, borderColor: COLORS.bg, alignItems: 'center', justifyContent: 'center' },
-  mapPreview: { height: 100, backgroundColor: COLORS.card, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  mapPreview: { height: 180, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden' },
   cta: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: COLORS.bg, borderTopWidth: 1, borderTopColor: COLORS.border, flexDirection: 'row', gap: 12 },
   mainBtnWrapper: { borderRadius: 14, padding: 16, alignItems: 'center' },
   mainBtnTxt: { color: COLORS.white, fontWeight: '800', fontSize: 15 },
   shareBtn: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  shareBtnTxt: { color: COLORS.text, fontWeight: '600', fontSize: 14 }
+  shareBtnTxt: { color: COLORS.text, fontWeight: '600', fontSize: 14 },
 });

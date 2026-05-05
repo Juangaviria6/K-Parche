@@ -1,12 +1,11 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { Event } from '../constants/types';
 import { COLORS } from '../constants/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { fmt } from '../constants/mockData';
 
 interface Props {
-  event: Event;
+  event: any;
   onPress: () => void;
   horizontal?: boolean;
 }
@@ -15,7 +14,7 @@ export const EventCard = ({ event, onPress, horizontal = false }: Props) => {
   if (horizontal) {
     return (
       <TouchableOpacity style={styles.hCard} onPress={onPress} activeOpacity={0.8}>
-        <Image source={{ uri: event.img }} style={styles.hImage} />
+        <Image source={{ uri: event.img || event.coverUrl }} style={styles.hImage} />
         <View style={styles.hInfo}>
           <View style={[styles.badge, { backgroundColor: event.color }]}>
             <Text style={styles.badgeText}>{event.type}</Text>
@@ -38,7 +37,7 @@ export const EventCard = ({ event, onPress, horizontal = false }: Props) => {
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-      <Image source={{ uri: event.img }} style={styles.image} />
+      <Image source={{ uri: event.img || event.coverUrl }} style={styles.image} />
       
       <View style={[styles.badge, { backgroundColor: event.color }, styles.topLeft]}>
         <Text style={styles.badgeText}>{event.type}</Text>

@@ -36,6 +36,11 @@ function InitialLayout() {
       <Stack.Screen name='(tabs)' />
       <Stack.Screen name='event-detail' options={{ presentation: 'modal' }} />
       <Stack.Screen name='university-detail' options={{ presentation: 'modal' }} />
+      <Stack.Screen name='my-tickets' />
+      <Stack.Screen name='benefits' />
+      <Stack.Screen name='activity' />
+      <Stack.Screen name='notifications' />
+      <Stack.Screen name='support' />
     </Stack>
   );
 }

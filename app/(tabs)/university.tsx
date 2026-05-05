@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../../constants/colors';
 import { UNIVERSITIES, EVENTS, INTERU_EVENTS, fmt } from '../../constants/mockData';
@@ -11,12 +12,13 @@ import { router } from 'expo-router';
 type Tab = 'unis' | 'events' | 'interu';
 
 export default function UniversityScreen() {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>('unis');
   const [searchUni, setSearchUni] = useState<string>('');
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={[COLORS.violet + '33', 'transparent']} style={styles.header}>
+      <LinearGradient colors={[COLORS.violet + '33', 'transparent']} style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.title}>🎓 K'PARCHE Uni</Text>
         <Text style={styles.subtitle}>Todo lo que pasa en tu campus</Text>
         
@@ -125,7 +127,7 @@ export default function UniversityScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { paddingTop: 60, paddingHorizontal: 16, paddingBottom: 16 },
+  header: { paddingHorizontal: 16, paddingBottom: 16 },
   title: { fontSize: 22, fontWeight: '900', color: COLORS.text },
   subtitle: { fontSize: 14, color: COLORS.muted, marginTop: 4, marginBottom: 20 },
   tabRow: { flexDirection: 'row', gap: 8 },

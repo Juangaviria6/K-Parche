@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, FlatList, TouchableOpacity } from 'react-native';
-import Mapbox, { MapView, Camera, MarkerView, UserLocation } from '@rnmapbox/maps';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MapView, { Marker } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { COLORS } from '../../constants/colors';
@@ -10,12 +11,18 @@ import { MapPinMarker } from '../../components/MapPinMarker';
 import { EventCategory } from '../../constants/types';
 import { useFilteredEvents } from '../../hooks/useFilteredEvents';
 
-Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
-
-const MEDELLIN_CENTER: [number, number] = [-75.5812, 6.2442];
 
 const EventMapMarker = ({ event, selected, onSelect }: any) => {
+  const [tracksView, setTracksView] = useState(true);
   const lastPress = useRef(0);
+
+  useEffect(() => {
+    setTracksView(true);
+    const timeout = setTimeout(() => {
+      setTracksView(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [selected]);
 
   const handlePress = () => {
     const now = Date.now();
@@ -28,19 +35,19 @@ const EventMapMarker = ({ event, selected, onSelect }: any) => {
   };
 
   return (
-    <MarkerView
-      coordinate={[event.longitude, event.latitude]}
-      id={`marker-${event.id}`}
-      allowOverlap
+    <Marker
+      coordinate={{ latitude: event.latitude, longitude: event.longitude }}
+      onPress={handlePress}
+      tracksViewChanges={tracksView}
+      anchor={{ x: 0.5, y: 1 }}
     >
-      <TouchableOpacity onPress={handlePress} activeOpacity={1}>
-        <MapPinMarker event={event} selected={selected} />
-      </TouchableOpacity>
-    </MarkerView>
+      <MapPinMarker event={event} selected={selected} />
+    </Marker>
   );
 };
 
 export default function ExploreScreen() {
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>('todos');
   const [selectedPin, setSelectedPin] = useState<string | null>(null);
@@ -51,7 +58,7 @@ export default function ExploreScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.searchRow}>
           <TextInput
             style={styles.searchInput}
@@ -101,17 +108,16 @@ export default function ExploreScreen() {
 
       <MapView
         style={styles.map}
-        styleURL={Mapbox.StyleURL.Dark}
-        logoEnabled={false}
-        attributionEnabled={false}
-        scaleBarEnabled={false}
+        initialRegion={{
+          latitude: 6.2442,
+          longitude: -75.5812,
+          latitudeDelta: 0.08,
+          longitudeDelta: 0.08,
+        }}
+        mapType="mutedStandard"
+        userInterfaceStyle="dark"
+        showsUserLocation
       >
-        <Camera
-          zoomLevel={11}
-          centerCoordinate={MEDELLIN_CENTER}
-          animationMode="none"
-        />
-        <UserLocation visible />
         {filteredEvents.map(event => (
           <EventMapMarker
             key={event.id}
@@ -166,7 +172,7 @@ export default function ExploreScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { backgroundColor: COLORS.surface, paddingTop: 40, paddingBottom: 10 },
+  header: { backgroundColor: COLORS.surface, paddingBottom: 10 },
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginBottom: 12 },
   searchInput: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 16, color: COLORS.text, height: 48 },
   filterBtn: { width: 48, height: 48, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

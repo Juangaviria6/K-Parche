@@ -10,7 +10,6 @@ function TabBarIcon({ name, emoji, focused }: { name: any, emoji: string, focuse
       <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5, transform: [{ scale: focused ? 1.15 : 1 }] }}>
         {emoji}
       </Text>
-      {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.accent, marginTop: 4 }} />}
     </View>
   );
 }
@@ -34,7 +33,6 @@ function ProfileTabIcon({ focused }: { focused: boolean }) {
           👤
         </Text>
       )}
-      {focused && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.accent, marginTop: 4 }} />}
     </View>
   );
 }

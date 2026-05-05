@@ -17,6 +17,7 @@ export default {
       supportsTablet: true,
     },
     android: {
+      package: 'com.juangaviria.kparche',
       adaptiveIcon: {
         backgroundColor: '#E6F4FE',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -31,13 +32,6 @@ export default {
     scheme: 'kparche',
     plugins: [
       'expo-router',
-      [
-        '@rnmapbox/maps',
-        {
-          RNMapboxMapsImpl: 'mapbox',
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOAD_TOKEN,
-        },
-      ],
     ],
     extra: {
       eas: {
