@@ -234,6 +234,24 @@ const lp = StyleSheet.create({
   confirm: { flex: 2, backgroundColor: COLORS.accent, borderRadius: 12, padding: 14, alignItems: 'center' },
 });
 
+// ─── Emoji mapping ────────────────────────────────────────────────────────────
+const TYPE_EMOJIS: Record<string, string> = {
+  'Discoteca': '🎧',
+  'Bar': '🍺',
+  'Concierto': '🎸',
+  'Taller': '🛠️',
+  'Gastronomia': '🍜',
+  'Teatro': '🎭',
+  'Integracion': '🏆',
+  'Electronica': '🎛️',
+};
+
+const EMOJI_OPTIONS = [
+  '🎧','🎸','🍺','🍜','🎭','🏆','🎛️','💃','🎨','🎤',
+  '🪩','🎺','🎻','🥁','🎮','⚽','🏄','🧘','🍕','🍣',
+  '🎪','🎡','🌟','🔥','🎉','🎊','🎵','🎶','🍻','🥂',
+];
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function PublishScreen() {
   const insets = useSafeAreaInsets();
@@ -249,6 +267,7 @@ export default function PublishScreen() {
     time: '',
     price: '', desc: '',
     plan: 'basico' as 'basico' | 'destacado',
+    emoji: TYPE_EMOJIS['Discoteca'],
     latitude: MEDELLIN.latitude,
     longitude: MEDELLIN.longitude,
   });
@@ -297,7 +316,7 @@ export default function PublishScreen() {
         desc: form.desc,
         plan: form.plan,
         img: imgUrl,
-        emoji: '🎈',
+        emoji: form.emoji,
         color: COLORS.accent,
         latitude: form.latitude,
         longitude: form.longitude,
@@ -308,7 +327,7 @@ export default function PublishScreen() {
 
       Alert.alert('¡Éxito!', 'Tu evento se publicó correctamente', [{
         text: 'OK', onPress: () => {
-          setForm({ name: '', place: '', type: 'Discoteca', date: '', dateISO: '', time: '', price: '', desc: '', plan: 'basico', latitude: MEDELLIN.latitude, longitude: MEDELLIN.longitude });
+          setForm({ name: '', place: '', type: 'Discoteca', date: '', dateISO: '', time: '', price: '', desc: '', plan: 'basico', emoji: TYPE_EMOJIS['Discoteca'], latitude: MEDELLIN.latitude, longitude: MEDELLIN.longitude });
           setImageUri(null);
           setStep(1);
           router.push('/(tabs)/');
@@ -374,8 +393,23 @@ export default function PublishScreen() {
               <Text style={styles.label}>Tipo de evento</Text>
               <View style={styles.pillGrid}>
                 {['Discoteca', 'Bar', 'Concierto', 'Taller', 'Gastronomia', 'Teatro', 'Integracion', 'Electronica'].map(t => (
-                  <TouchableOpacity key={t} style={[styles.typePill, form.type === t && styles.typePillActive]} onPress={() => setForm({ ...form, type: t })}>
-                    <Text style={[styles.typePillText, form.type === t && { color: COLORS.white }]}>{t}</Text>
+                  <TouchableOpacity key={t} style={[styles.typePill, form.type === t && styles.typePillActive]} onPress={() => setForm({ ...form, type: t, emoji: TYPE_EMOJIS[t] ?? form.emoji })}>
+                    <Text style={[styles.typePillText, form.type === t && { color: COLORS.white }]}>{TYPE_EMOJIS[t]} {t}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={[styles.label, { marginTop: 16 }]}>Emoji en el mapa</Text>
+              <View style={styles.emojiPreviewRow}>
+                <View style={styles.emojiPreviewBadge}>
+                  <Text style={styles.emojiPreviewText}>{form.emoji}</Text>
+                </View>
+                <Text style={styles.emojiPreviewHint}>Así aparecerá tu evento en el mapa</Text>
+              </View>
+              <View style={styles.emojiGrid}>
+                {EMOJI_OPTIONS.map(e => (
+                  <TouchableOpacity key={e} style={[styles.emojiCell, form.emoji === e && styles.emojiCellActive]} onPress={() => setForm({ ...form, emoji: e })}>
+                    <Text style={styles.emojiCellText}>{e}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -517,4 +551,12 @@ const styles = StyleSheet.create({
   btnNext: { flex: 2 },
   btnNextGrad: { borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', height: 56 },
   btnNextText: { color: COLORS.white, fontWeight: '800' },
+  emojiPreviewRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  emojiPreviewBadge: { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.card2, borderWidth: 2, borderColor: COLORS.accent, alignItems: 'center', justifyContent: 'center' },
+  emojiPreviewText: { fontSize: 26 },
+  emojiPreviewHint: { color: COLORS.muted, fontSize: 12, flex: 1 },
+  emojiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  emojiCell: { width: 44, height: 44, borderRadius: 10, backgroundColor: COLORS.card2, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  emojiCellActive: { borderColor: COLORS.accent, borderWidth: 2, backgroundColor: COLORS.accent + '22' },
+  emojiCellText: { fontSize: 22 },
 });

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/colors';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 type Mode = 'user' | 'uni' | 'org';
 
@@ -18,7 +19,10 @@ export default function LoginScreen() {
   const handleAuth = async () => {
     if (!email || !password) return Alert.alert('Error', 'Ingresa correo y contraseña');
     if (!isLoginView && !name) return Alert.alert('Error', 'Ingresa tu nombre completo');
-    
+    if (!isLoginView && mode === 'uni' && !email.toLowerCase().endsWith('.edu.co')) {
+      return Alert.alert('Correo inválido', 'Los estudiantes deben registrarse con su correo institucional (.edu.co)');
+    }
+
     setLoading(true);
     try {
       if (isLoginView) {
@@ -26,6 +30,12 @@ export default function LoginScreen() {
       } else {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName: name });
+        await setDoc(doc(db, 'users', cred.user.uid), {
+          role: mode,
+          email: email.toLowerCase(),
+          name,
+          createdAt: new Date().toISOString(),
+        });
       }
     } catch (e: any) {
       let friendlyMessage = 'Ocurrió un error inesperado.';

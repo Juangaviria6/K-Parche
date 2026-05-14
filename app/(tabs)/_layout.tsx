@@ -38,6 +38,13 @@ function ProfileTabIcon({ focused }: { focused: boolean }) {
 }
 
 export default function TabLayout() {
+  const { user, role } = useAuth();
+  const email = user?.email?.toLowerCase() ?? '';
+  const hasEduEmail = email.endsWith('.edu.co');
+
+  const showUni = role === 'uni' || (role === 'org' && hasEduEmail);
+  const showPublish = role === 'org';
+
   return (
     <Tabs
       screenOptions={{
@@ -68,6 +75,7 @@ export default function TabLayout() {
         name="university"
         options={{
           title: 'Uni',
+          href: showUni ? undefined : null,
           tabBarIcon: ({ focused }) => <TabBarIcon emoji="🎓" name="school" focused={focused} />,
         }}
       />
@@ -82,6 +90,7 @@ export default function TabLayout() {
         name="publish"
         options={{
           title: 'Publicar',
+          href: showPublish ? undefined : null,
           tabBarIcon: ({ focused }) => <TabBarIcon emoji="➕" name="add-circle" focused={focused} />,
         }}
       />
